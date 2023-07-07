@@ -17,27 +17,16 @@ class UsuarioController extends AbstractController
         $this->doctrine = $doctrine;
     }
 
-
-    #[Route('/postUsuario', name: 'app_usuarioPost', methods:['post'] )]
-    public function addUsuario(Request $request): JsonResponse
+    #[Route('/getAllUsuarios', name: 'usuario', methods:['get'] )]
+    public function getAllUsuarios(): JsonResponse
     {
-        $entityManager = $this->doctrine->getManager();
-        $usuario = new Usuario();
-        $requestContent = json_decode($request->getContent(), true);
-        $usuarioExist = $this->doctrine->getRepository(Usuario::class)->find( $requestContent['dni']);
-        if($usuarioExist){
-            $usuario->setName($requestContent['name']);
-            $usuario->setLastname($requestContent['lastname']);
-            $usuario->setDni($requestContent['dni']);
-            $usuario->setEmail($requestContent['email']);
-            $usuario->setAddress($requestContent['address']);
-            $usuario->setPhone($requestContent['phone']);
-            $usuario->setNote($requestContent['note']);
-    
-            $entityManager->persist($usuario);
-            $entityManager->flush();
-    
-            $data =  [
+        $usuarios = $this->doctrine
+            ->getRepository(Usuario::class)
+            ->findAll();
+ 
+            foreach ($usuarios as $usuario) {
+               $data[] = [
+                'id' => $usuario->getId(),
                 'name' => $usuario->getName(),
                 'lastname'=>$usuario->getLastname(),
                 'dni'=>$usuario->getDni(),
@@ -45,16 +34,72 @@ class UsuarioController extends AbstractController
                 'address'=>$usuario->getAddress(),
                 'phone'=>$usuario->getPhone(),
                 'note'=>$usuario->getNote()
-            ];
-    
-            return $this->json([
-                'usuario' => $data,
-                'status'=>'OK'
-            ]);
+               ];
+            }
+        return $this->json($data);
+    }
 
-        }else{
+
+    #[Route('/getUsuario/{id}', name: 'usuario_id', methods:['get'] )]
+    public function getUsuariosById(int $id): JsonResponse
+    {
+        $usuario = $this->doctrine->getRepository(Usuario::class)->find($id);
+          
+        if (!$usuario) {
+            return $this->json('No existe usuario con el id ' . $id, 404);
+        }
+
+        $data =  [
+            'name' => $usuario->getName(),
+            'lastname'=>$usuario->getLastname(),
+            'dni'=>$usuario->getDni(),
+            'email'=>$usuario->getEmail(),
+            'address'=>$usuario->getAddress(),
+            'phone'=>$usuario->getPhone(),
+            'note'=>$usuario->getNote()
+        ];
+
+        return $this->json($data);
+    }
+
+
+
+    #[Route('/postUsuario', name: 'app_usuarioPost', methods:['post'] )]
+    public function addUsuario(Request $request): JsonResponse
+    {
+        $entityManager = $this->doctrine->getManager();
+        $usuario = new Usuario();
+        $requestContent = json_decode($request->getContent(), true);
+        $usuarioExist = $this->doctrine->getRepository(Usuario::class)->findOneBy(['dni' =>  $requestContent['dni']]);
+        if($usuarioExist){
             return $this->json(['result'=> 'Existe Usuario con el dni ingresado', 'error'=> 404]);
         }
+
+        $usuario->setName($requestContent['name']);
+        $usuario->setLastname($requestContent['lastname']);
+        $usuario->setDni($requestContent['dni']);
+        $usuario->setEmail($requestContent['email']);
+        $usuario->setAddress($requestContent['address']);
+        $usuario->setPhone($requestContent['phone']);
+        $usuario->setNote($requestContent['note']);
+
+        $entityManager->persist($usuario);
+        $entityManager->flush();
+
+        $data =  [
+            'name' => $usuario->getName(),
+            'lastname'=>$usuario->getLastname(),
+            'dni'=>$usuario->getDni(),
+            'email'=>$usuario->getEmail(),
+            'address'=>$usuario->getAddress(),
+            'phone'=>$usuario->getPhone(),
+            'note'=>$usuario->getNote()
+        ];
+
+        return $this->json([
+            'usuario' => $data,
+            'status'=>'OK'
+        ]);
       
     }
 
